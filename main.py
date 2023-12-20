@@ -84,12 +84,11 @@ def plot_authors(root_elem):
             author_set.add(author)
             metadata.append({'lang': letter.find("./interp[@type='language']").get('value'), 'author': author})
     print(len(author_set))
-    #print(author_set)
+
     # Go from set to sorted list to make sure we keep the order for the following operations
-    #authors = np.array(list(author_set).sort())
-    #print(authors)
-    authors = list(author_set)
-    authors.sort()
+    authors_list = list(author_set)
+    authors_list.sort()
+    authors = np.array(authors_list)
     latin = np.zeros(len(authors))
     french = np.zeros(len(authors))
     dutch = np.zeros(len(authors))
@@ -108,19 +107,22 @@ def plot_authors(root_elem):
     latin_proportion = np.zeros(len(authors))
     french_proportion = np.zeros(len(authors))
     dutch_proportion = np.zeros(len(authors))
+    total_letters = np.zeros(len(authors))
     for i in range(0, len(authors)):
-        total_letters = latin[i] + french[i] + dutch[i]
-        latin_proportion[i] = latin[i] / total_letters
-        french_proportion[i] = french[i] / total_letters
-        dutch_proportion[i] = dutch[i] / total_letters
+        total_letters[i] = latin[i] + french[i] + dutch[i]
+        latin_proportion[i] = latin[i] / total_letters[i]
+        french_proportion[i] = french[i] / total_letters[i]
+        dutch_proportion[i] = dutch[i] / total_letters[i]
 
-    # Print a nice table TODO: actually a nice looking one
-    #print("Name\t Latin\t French\t Dutch")
-    #for i, author in enumerate(authors):
-    #    print("%s:\t %f\t %f\t %f" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i]))
+    # Print a nice table of the results TODO: actually a nice looking one using some library
+    # Reserve 40 chars for the names
+    print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
+    for i, author in enumerate(authors):
+        print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
 
     # For now, look only at senders using more than one language so as to not overwhelm in the plot
     # Let anyone with nan values slip through for now, they won't be plotted anyway
+    # TODO: make lists of the monolingual authors and the amount of letters they have written
     multilingual_authors = list()
     multiling_latin_prop = list()
     multiling_french_prop = list()
