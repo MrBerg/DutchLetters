@@ -60,7 +60,7 @@ def plot_timeline(root_elem):
                 elif letter['lang'] == 'nl':
                     dutch[i] += 1
 
-    plt.figure(figsize=(5, 2.7), layout='constrained')
+    plt.figure()
     plt.plot(x, latin, label='Latin')
     plt.plot(x, french, label='French')
     plt.plot(x, dutch, label='Dutch')
@@ -69,7 +69,99 @@ def plot_timeline(root_elem):
     plt.title("Language used in letters over time")
     plt.legend()
     plt.show()
+    #TODO figure out how to save these plots
+
+# Do it again in a stupid way for now, later combine metadata generation and filtering
+# Here we want to find the proportions of letters in each language per sender (NB: not necessarily the author)
+# We should do it in the same step to get only letters with declared languages
+def plot_authors(root_elem):
+    metadata = []
+    author_set = set()
+    for letter in root_elem.iterfind("./div/interpGrp"):
+        author_node = letter.find("./interp[@type='sender']")
+        author = author_node.get('value')
+        if author != '?':
+            author_set.add(author)
+            metadata.append({'lang': letter.find("./interp[@type='language']").get('value'), 'author': author})
+    print(len(author_set))
+    #print(author_set)
+    # Go from set to sorted list to make sure we keep the order for the following operations
+    #authors = np.array(list(author_set).sort())
+    #print(authors)
+    authors = list(author_set)
+    authors.sort()
+    latin = np.zeros(len(authors))
+    french = np.zeros(len(authors))
+    dutch = np.zeros(len(authors))
+    for i in range(0, len(authors)):
+        author = authors[i]
+        for letter in metadata:
+            if letter['author'] == author:
+                if letter['lang'] == 'la':
+                    latin[i] += 1
+                elif letter['lang'] == 'fr':
+                    french[i] += 1
+                elif letter['lang'] == 'nl':
+                    dutch[i] += 1
+
+    # Could probably use actual numpy methods but haven't yet got the time to do so
+    latin_proportion = np.zeros(len(authors))
+    french_proportion = np.zeros(len(authors))
+    dutch_proportion = np.zeros(len(authors))
+    for i in range(0, len(authors)):
+        total_letters = latin[i] + french[i] + dutch[i]
+        latin_proportion[i] = latin[i] / total_letters
+        french_proportion[i] = french[i] / total_letters
+        dutch_proportion[i] = dutch[i] / total_letters
+
+    # Print a nice table TODO: actually a nice looking one
+    #print("Name\t Latin\t French\t Dutch")
+    #for i, author in enumerate(authors):
+    #    print("%s:\t %f\t %f\t %f" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i]))
+
+    # For now, look only at senders using more than one language so as to not overwhelm in the plot
+    # Let anyone with nan values slip through for now, they won't be plotted anyway
+    multilingual_authors = list()
+    multiling_latin_prop = list()
+    multiling_french_prop = list()
+    multiling_dutch_prop = list()
+    for i, author in enumerate(authors):
+        if latin_proportion[i] != 1.0 and french_proportion[i] != 1.0 and dutch_proportion[i] != 1.0:
+            multilingual_authors.append(author)
+            multiling_latin_prop.append(latin_proportion[i])
+            multiling_french_prop.append(french_proportion[i])
+            multiling_dutch_prop.append(dutch_proportion[i])
+
+    print("Found %d multilingual authors" % len(multilingual_authors))
+    # Now the plotting begins
+    # TODO: instead of doing a 3d plot, do a ternary scatterplot
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    #xs = latin_proportion
+    #ys = french_proportion
+    #zs = dutch_proportion
+    #ax.scatter(xs, ys, zs)
+    #for i, author in enumerate(authors):
+    #    ax.text(xs[i], ys[i], zs[i], author)
+
+    xs = multiling_latin_prop
+    ys = multiling_french_prop
+    zs = multiling_dutch_prop
+    ax.scatter(xs, ys, zs)
+    for i, author in enumerate(multilingual_authors):
+        ax.text(xs[i], ys[i], zs[i], author)
+
+    ax.set_xlabel('Proportion of Latin')
+    ax.set_ylabel('Proportion of French')
+    ax.set_zlabel('Proportion of Dutch')
+
+    # Rotate the plot to a better perspective for viewing the gamut
+    # Default is elev=30, azim=-60, roll=0
+    ax.view_init(elev=60, azim=45, roll=0)
+    plt.show()
 
 # Currently only looking at de Groot, expand to the rest later
 letters = parse_transcriptions('ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/')
 plot_timeline(letters)
+plot_authors(letters)
