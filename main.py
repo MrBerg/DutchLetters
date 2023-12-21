@@ -26,24 +26,38 @@ def parse_transcriptions(files):
     return root
 
 # For now, just use the available metadata and not the transcription
-
 # Dates are listed as year, year-month, year-month-date or year-month/year-month or ?
-# Just pick the first year available
-def plot_timeline(root_elem):
+# Just pick the first year available for multi-year datings
+# TODO what to do about other languages present (German at least)?
+def parse_metadata(root_elem):
     metadata = []
+    # datelist could also probably be a set.
     datelist = []
+    author_set = set()
     # Will only be used for matching from the beginning anyway
     year_pattern = re.compile('\d{4}')
+
     for letter in root_elem.iterfind("./div/interpGrp"):
+        author_node = letter.find("./interp[@type='sender']")
+        author = author_node.get('value')
         date = letter.find("./interp[@type='date']")
         year = year_pattern.match(date.get('value'))
-        if year is not None:
+        language = letter.find("./interp[@type='language']").get('value')
+        if year is not None and author != '?' and language != '?':
             datelist.append(int(year.group()))
-            metadata.append({'lang': letter.find("./interp[@type='language']").get('value'), 'year': int(year.group())})
-    print(len(datelist))
+            author_set.add(author)
+            metadata.append({'lang': language, 'author': author, 'year': int(year.group())})
     datelist.sort()
     min_date = datelist[0]
     max_date = datelist[-1]
+    # Go from set to sorted list to make sure we keep the order for the following operations
+    authors_list = list(author_set)
+    authors_list.sort()
+    print("Processed %d letters from %d to %d from %d senders, having a specified date(range), sender and language" % (len(metadata), min_date, max_date, len(authors_list)))
+    return metadata, min_date, max_date, authors_list
+
+
+def plot_timeline(metadata, min_date, max_date):
     x = np.arange(min_date, max_date+1) # arange is [start, stop)
     latin = np.zeros(len(x))
     french = np.zeros(len(x))
@@ -71,23 +85,8 @@ def plot_timeline(root_elem):
     plt.show()
     #TODO figure out how to save these plots
 
-# Do it again in a stupid way for now, later combine metadata generation and filtering
 # Here we want to find the proportions of letters in each language per sender (NB: not necessarily the author)
-# We should do it in the same step to get only letters with declared languages
-def plot_authors(root_elem):
-    metadata = []
-    author_set = set()
-    for letter in root_elem.iterfind("./div/interpGrp"):
-        author_node = letter.find("./interp[@type='sender']")
-        author = author_node.get('value')
-        if author != '?':
-            author_set.add(author)
-            metadata.append({'lang': letter.find("./interp[@type='language']").get('value'), 'author': author})
-    print(len(author_set))
-
-    # Go from set to sorted list to make sure we keep the order for the following operations
-    authors_list = list(author_set)
-    authors_list.sort()
+def plot_authors(root_elem, authors_list):
     authors = np.array(authors_list)
     latin = np.zeros(len(authors))
     french = np.zeros(len(authors))
@@ -116,9 +115,9 @@ def plot_authors(root_elem):
 
     # Print a nice table of the results TODO: actually a nice looking one using some library
     # Reserve 40 chars for the names
-    #print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
-    #for i, author in enumerate(authors):
-    #    print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
+    print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
+    for i, author in enumerate(authors):
+        print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
 
     # Find most prolific authors to make less crowded graphs
     toplist = sorted(zip(authors, latin_proportion, french_proportion, dutch_proportion, total_letters), key=lambda author: author[4], reverse=True)
@@ -173,5 +172,6 @@ def plot_authors(root_elem):
 
 # Currently only looking at de Groot, expand to the rest later
 letters = parse_transcriptions('ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/')
-plot_timeline(letters)
-plot_authors(letters)
+metadata, min_date, max_date, authors_list = parse_metadata(letters)
+plot_timeline(metadata, min_date, max_date)
+plot_authors(metadata, authors_list)
