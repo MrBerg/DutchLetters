@@ -116,9 +116,17 @@ def plot_authors(root_elem):
 
     # Print a nice table of the results TODO: actually a nice looking one using some library
     # Reserve 40 chars for the names
+    #print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
+    #for i, author in enumerate(authors):
+    #    print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
+
+    # Find most prolific authors to make less crowded graphs
+    toplist = sorted(zip(authors, latin_proportion, french_proportion, dutch_proportion, total_letters), key=lambda author: author[4], reverse=True)
+    print("Top 100 authors")
     print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
-    for i, author in enumerate(authors):
-        print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
+    for i in range(0,100):
+        print("%-40s:\t %f\t %f\t %f\t %d" % (toplist[i][0], toplist[i][1], toplist[i][2], toplist[i][3], toplist[i][4]))
+
 
     # For now, look only at senders using more than one language so as to not overwhelm in the plot
     # Let anyone with nan values slip through for now, they won't be plotted anyway
