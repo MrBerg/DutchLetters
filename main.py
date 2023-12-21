@@ -95,7 +95,10 @@ def plot_timeline(metadata, min_date, max_date):
     plt.ylabel('Number of letters')
     plt.title("Language used in letters over time")
     plt.legend()
-    plt.show()
+    timeline_file_name = 'timeline.png'
+    plt.savefig(timeline_file_name)
+    print("Figure saved to file %s" % timeline_file_name)
+    #plt.show()
     #TODO figure out how to save these plots
 
 # Here we want to find the proportions of letters in each language per sender (NB: not necessarily the author)
@@ -200,26 +203,33 @@ def plot_authors(root_elem, authors_list):
     ax.set_xlabel('Proportion of Latin')
     ax.set_ylabel('Proportion of French')
     ax.set_zlabel('Proportion of Dutch')
+    plt.title('3d scatterplot of the proportions of Latin, French and Dutch letters')
 
     # Rotate the plot to a better perspective for viewing the gamut
     # Default is elev=30, azim=-60, roll=0
     ax.view_init(elev=60, azim=45, roll=0)
-    plt.show()
+    scatter_3d_file_name = '3d_scatter.png'
+    plt.savefig(scatter_3d_file_name)
+    print("Figure saved to file %s" % scatter_3d_file_name)
+    #plt.show()
 
     # Do a ternary plot
-    fig_tern = plt.figure()
+    # TODO fix the title positioning to appear inside figure
+    fig_tern = plt.figure(layout="tight")
     ax_tern = fig_tern.add_subplot(projection="ternary")
-
+    plt.title("Ternary plot of the proportions of letters in Latin, French and Dutch per sender")
+    #plt.autoscale()
     ax_tern.set_tlabel("Latin")
     ax_tern.set_llabel("French")
     ax_tern.set_rlabel("Dutch")
 
     ax_tern.grid()
     ax_tern.scatter(xs, ys, zs)
-    # TODO make the names actually appear in the plot
     for i, author in enumerate(multilingual_authors):
         ax_tern.text(xs[i], ys[i], zs[i], author)
-
+    ternary_file_name = 'ternary_plot.png'
+    plt.savefig(ternary_file_name)
+    print("Figure saved to file %s" % ternary_file_name)
     plt.show()
 
 # Currently only looking at de Groot, Christiaan and Constantijn Huyghens, expand to the rest later when I have looked into their xml file layout
