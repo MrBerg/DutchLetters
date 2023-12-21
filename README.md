@@ -1,8 +1,8 @@
-#Dutch letters: a final project for the Computational literacy course
+# Dutch letters: a final project for the Computational literacy course
 
-###By Jonas Berg
+### By Jonas Berg
 
-##Requirements to replicate
+## Requirements to replicate
 
 Software used:
 * Python 3 (I'm using 3.9.13)
@@ -20,7 +20,7 @@ To get access to the data, download the CKCC data from [their gitlab](https://gi
 To run the program, just run `python3 main.py` from this folder, most of the output will be to stdout
 and the figures will be in popup windows. You need to close the window to have the program move forward. The figures are also automatically saved to separate .png files.
 
-##Research questions
+## Research questions
 
 This project tries to answer two questions:
 1. How does the popularity of different languages vary for letters during the studied time period, and why?
@@ -28,7 +28,7 @@ This project tries to answer two questions:
 
 While Latin was the predominant language for learned communication in the Middle Ages, French would start to replace it especially for international and diplomatic use during the Early Modern period. Scientific writing would continue to be done mainly in Latin for this whole period, but vernacular languages also gained more and more use for domestic communication. By looking at the senders of letters and the language they write in, we can gain a glimpse at what languages they expected the receiver to understand and which language they considered the correct one for their particular letter, be it due to subject matter and established terminology or their own level of language proficiency.
 
-##The data
+## The data
 
 The data used is officially to be cited as HuygensING-CKCC, 2011, "Project Circulation of Knowledge and learned practices in the 17th-century Dutch Republic. A web-based Humanities Collaboratory on Correspondences (Geleerdenbrieven) - archived version d.d. 2013-07-23", https://doi.org/10.17026/dans-xfd-n8y5, DANS Data Station Social Sciences and Humanities, V3, UNF:6:M3CZThdwpPeElXlaFE/RLQ== [fileUNF]
 
@@ -58,7 +58,7 @@ Sed aurem vellit <persName>Cato</persName>, qui ‘senilem iuventam signum esse 
 <!-- EOI -->
 ```
 
-##What I did with the data
+## What I did with the data
 
 For this project, I am only looking at the metadata, that is the `<interp>` elements inside `<interpGrp>` elements in the XML files. I am also limiting the data only to those letters which have a known sender, approximate date, and listed language for the whole letter. Since this corpus is from several different institutions and presented in slightly different XML markup, I am limiting the data to those that are present in actual .xml files and using `<interpGrp>` tags (not `<meta>` tags) and have the language listed in an `<interp>` group and not as an attribute for `<div>` elements inside the transcriptions. I identify letters in the XML by searching for `<div>` elements of the subtype "artifact". Another subtype "replaced_artifact" may also refer to letters, possibly lost or not available or not transcribed, but those elements are excluded for now to make the parsing easier.
 
@@ -76,7 +76,7 @@ I then go through all smaller languages (not Latin, French, Dutch) and print all
 
 After that I go through the amount of letters they have sent in Latin, French and Dutch and calculate the relative proportions to create a ternary scatterplot and a backup 3d scatterplot that is easier to rotate and zoom in on. I only looked at letters in these three languages, since those are the three languages that are most present in the CKCC corpus and get their own columns in the project's [table on language variation](https://ckcc.huygens.knaw.nl/?page_id=43). I also print out the top 100 most prolific authors in these languages in text format before I limit the data to only contain those 84 authors who write in more than one of these three languages. I also print out that list of "multilingual" authors
 
-##Analysis
+## Analysis
 
 The [timeline](timeline.png) shows that Latin is the predominant language of letters in the first half of the 17th century, while French takes over in the second half. Dutch is also relatively popular in the 1610s-1640s. The predominance of French is perhaps due to France's rise as a superpower, being at its height during the reign of Louis XIV (r. 1643–1715, personal rule 1661-1715). The persecution of the Protestant Huguenots during his reign probably also caused some of them to emigrate to the Dutch republic or petition their brothers in faith to help them, in French.
 
@@ -84,7 +84,7 @@ The timeline also shows that letters in German are almost exclusively in the sam
 
 The [3d scatterplot](3d_scatter.png) and [ternary plot](ternary_plot.png) show many authors writing in varying amounts of French and Latin exclusively, and some using Latin and Dutch exclusively, not very many using French and Dutch exclusively. Very few people are using all three languages, among them Hugo de Groot, Constantijn Huyghens (1596-1687) and Christiaan Huyghens who are the people whose corpuses are used. Other interesting trilingual letter-writers are Constantijn Huyghens (1628-1697), Queen Kristina of Sweden, Johannes Uytenbogaert (1557-1644) and Johan Brosterhuyzen (1596-1650). Further research could go into this correspondence for a close reading to find out whether all these letters are written by the senders or by a secretary, and what their contents are per language.
 
-##Potential biases and problems
+## Potential biases and problems
 
 The dataset is dominated by Hugo de Groot's correspondence. This problem also existed in the complete CKCC corpus, but there Constantijn Huyghens also contributed with almost as many letters as de Groot, and my subset of data additionally excludes all the small corpuses. Trying to analyse 17th century use of language by counting only one language per letter is not very representative of the actual practice at the time, where one letter could contain paragraphs or sentences or even sentence fragments in many different languages. There is a case to be made for including German in the "major languages" I look at in detail since roughly 200 letters in my subset are in German. However I excluded it because 1) the CKCC project lumps it together with other rarer languages in the corpus, and 2) trying to do a 4d scatterplot was beyond my ability. Most of the interesting results regarding German and other minor languages can be attained just by looking at the top lists per language which is present in the output.
 
