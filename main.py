@@ -34,6 +34,7 @@ def parse_metadata(root_elem):
     # datelist could also probably be a set.
     datelist = []
     author_set = set()
+    lang_set = set()
     # Will only be used for matching from the beginning anyway
     year_pattern = re.compile('\d{4}')
 
@@ -46,6 +47,7 @@ def parse_metadata(root_elem):
         if year is not None and author != '?' and language != '?':
             datelist.append(int(year.group()))
             author_set.add(author)
+            lang_set.add(language)
             metadata.append({'lang': language, 'author': author, 'year': int(year.group())})
     datelist.sort()
     min_date = datelist[0]
@@ -53,8 +55,9 @@ def parse_metadata(root_elem):
     # Go from set to sorted list to make sure we keep the order for the following operations
     authors_list = list(author_set)
     authors_list.sort()
-    print("Processed %d letters from %d to %d from %d senders, having a specified date(range), sender and language" % (len(metadata), min_date, max_date, len(authors_list)))
-    return metadata, min_date, max_date, authors_list
+    print("Processed %d letters from %d–%d from %d senders in %d languages, having a specified date(range), sender and language" % (len(metadata), min_date, max_date, len(authors_list), len(lang_set)))
+    print("Languages used: " + str(lang_set))
+    return metadata, min_date, max_date, authors_list, lang_set
 
 
 def plot_timeline(metadata, min_date, max_date):
@@ -172,6 +175,6 @@ def plot_authors(root_elem, authors_list):
 
 # Currently only looking at de Groot, expand to the rest later
 letters = parse_transcriptions('ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/')
-metadata, min_date, max_date, authors_list = parse_metadata(letters)
+metadata, min_date, max_date, authors_list, lang_set = parse_metadata(letters)
 plot_timeline(metadata, min_date, max_date)
 plot_authors(metadata, authors_list)
