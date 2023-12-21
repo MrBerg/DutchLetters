@@ -22,7 +22,7 @@ def parse_transcriptions(files):
         # TODO add useful replaced-artifact divs?
         for result in data.iterfind("./text/body/div[@subtype='artifact']"):
             root.append(result)
-    print(ET.tostring(root.find("./")))
+    #print(ET.tostring(root.find("./")))
     return root
 
 # For now, just use the available metadata and not the transcription
@@ -65,6 +65,7 @@ def plot_timeline(metadata, min_date, max_date):
     latin = np.zeros(len(x))
     french = np.zeros(len(x))
     dutch = np.zeros(len(x))
+    german = np.zeros(len(x))
     # Very inefficient way of doing this but no point prematurely optimizing
     for i in range(0, len(x)):
         year = x[i]
@@ -76,11 +77,14 @@ def plot_timeline(metadata, min_date, max_date):
                     french[i] += 1
                 elif letter['lang'] == 'nl':
                     dutch[i] += 1
+                elif letter['lang'] == 'de':
+                    german[i] += 1
 
     plt.figure()
     plt.plot(x, latin, label='Latin')
     plt.plot(x, french, label='French')
     plt.plot(x, dutch, label='Dutch')
+    plt.plot(x, german, label='German')
     plt.xlabel('Year')
     plt.ylabel('Number of letters')
     plt.title("Language used in letters over time")
@@ -94,6 +98,11 @@ def plot_authors(root_elem, authors_list):
     latin = np.zeros(len(authors))
     french = np.zeros(len(authors))
     dutch = np.zeros(len(authors))
+    german = np.zeros(len(authors))
+    english  = np.zeros(len(authors))
+    italian = np.zeros(len(authors))
+    spanish = np.zeros(len(authors))
+    greek = np.zeros(len(authors))
     for i in range(0, len(authors)):
         author = authors[i]
         for letter in metadata:
@@ -104,6 +113,29 @@ def plot_authors(root_elem, authors_list):
                     french[i] += 1
                 elif letter['lang'] == 'nl':
                     dutch[i] += 1
+                elif letter['lang'] == 'de':
+                    german[i] += 1
+                elif letter['lang'] == 'en':
+                    english[i] += 1
+                elif letter['lang'] == 'it':
+                    italian[i] += 1
+                elif letter['lang'] == 'es' or letter['lang'] == 'spanish':
+                    spanish[i] += 1
+                elif letter['lang'] == 'grc':
+                    greek[i] += 1
+
+    # Look into the minor languages first TODO: discard before later stage?
+    minor_lang_toplist = list(zip(authors, german, english, italian, spanish, greek))
+    languages = ('German', 'English', 'Italian', 'Spanish', 'Ancient Greek')
+    for i, lang in enumerate(languages):
+        # Sort in reverse numerical order, only show those who have letters
+        sorted_by_lang = sorted(minor_lang_toplist, key=lambda auth: auth[i+1], reverse=True)
+        sorted_and_filtered = list(filter(lambda authr: authr[i+1] > 0, sorted_by_lang))
+        print()
+        print("Authors for %s" % lang)
+        print("%-40s\t %s\t Total letters in minor languages" % ("Name", lang))
+        for author in sorted_and_filtered:
+            print("%-40s:\t %d\t %d" % (author[0], author[i+1], sum(author[1:])))
 
     # Could probably use actual numpy methods but haven't yet got the time to do so
     latin_proportion = np.zeros(len(authors))
@@ -118,12 +150,15 @@ def plot_authors(root_elem, authors_list):
 
     # Print a nice table of the results TODO: actually a nice looking one using some library
     # Reserve 40 chars for the names
+    print()
+    print("Major languages only now")
     print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
     for i, author in enumerate(authors):
         print("%-40s:\t %f\t %f\t %f\t %d" % (author, latin_proportion[i], french_proportion[i], dutch_proportion[i], total_letters[i]))
 
     # Find most prolific authors to make less crowded graphs
     toplist = sorted(zip(authors, latin_proportion, french_proportion, dutch_proportion, total_letters), key=lambda author: author[4], reverse=True)
+    print()
     print("Top 100 authors")
     print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total" % "Name")
     for i in range(0,100):
@@ -144,7 +179,7 @@ def plot_authors(root_elem, authors_list):
             multiling_french_prop.append(french_proportion[i])
             multiling_dutch_prop.append(dutch_proportion[i])
 
-    print("Found %d multilingual authors" % len(multilingual_authors))
+    print("Found %d multilingual authors (major languages only)" % len(multilingual_authors))
     # Now the plotting begins
     # TODO: instead of doing a 3d plot, do a ternary scatterplot
     fig = plt.figure()
