@@ -98,7 +98,7 @@ def plot_timeline(metadata, min_date, max_date):
     timeline_file_name = 'timeline.png'
     plt.savefig(timeline_file_name)
     print("Figure saved to file %s" % timeline_file_name)
-    #plt.show()
+    plt.show()
     #TODO figure out how to save these plots
 
 # Here we want to find the proportions of letters in each language per sender (NB: not necessarily the author)
@@ -190,7 +190,7 @@ def plot_authors(root_elem, authors_list):
     print("Found %d multilingual authors (major languages only)" % len(multilingual_authors))
     # Now the plotting begins
     # TODO: instead of doing a 3d plot, do a ternary scatterplot
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,8))
     ax = fig.add_subplot(projection='3d')
 
     xs = multiling_latin_prop
@@ -211,13 +211,13 @@ def plot_authors(root_elem, authors_list):
     scatter_3d_file_name = '3d_scatter.png'
     plt.savefig(scatter_3d_file_name)
     print("Figure saved to file %s" % scatter_3d_file_name)
-    #plt.show()
+    plt.show()
 
     # Do a ternary plot
     # TODO fix the title positioning to appear inside figure
-    fig_tern = plt.figure(layout="tight")
+    fig_tern = plt.figure(figsize=(10,8), layout='constrained')
     ax_tern = fig_tern.add_subplot(projection="ternary")
-    plt.title("Ternary plot of the proportions of letters in Latin, French and Dutch per sender")
+    ax_tern.set_title("Proportions of letters in Latin, French and Dutch per sender")
     #plt.autoscale()
     ax_tern.set_tlabel("Latin")
     ax_tern.set_llabel("French")
