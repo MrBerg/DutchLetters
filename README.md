@@ -2,6 +2,8 @@
 
 ### By Jonas Berg
 
+[![DOI](https://zenodo.org/badge/734520492.svg)](https://zenodo.org/doi/10.5281/zenodo.10420853)
+
 ## Requirements to replicate
 
 Software used:
@@ -26,7 +28,14 @@ This project tries to answer two questions:
 1. How does the popularity of different languages vary for letters during the studied time period, and why?
 2. Which languages do different kinds of authors use?
 
-While Latin was the predominant language for learned communication in the Middle Ages, French would start to replace it especially for international and diplomatic use during the Early Modern period. Scientific writing would continue to be done mainly in Latin for this whole period, but vernacular languages also gained more and more use for domestic communication. By looking at the senders of letters and the language they write in, we can gain a glimpse at what languages they expected the receiver to understand and which language they considered the correct one for their particular letter, be it due to subject matter and established terminology or their own level of language proficiency.
+While Latin was the predominant language for learned communication in Europe during the Middle Ages, French would start to replace it especially for international and diplomatic use during the Early Modern period. Similarly, European court culture was predominantly in Latin until French gradually replaced it in the 18th century (De Bom). This common culture was an outgrowth of the international Latin-literate learned communities, the 'respublica literatia' (De Bom).  Scientific writing would continue to be done mainly in Latin for this whole period, but vernacular languages also gained more and more use for domestic communication. By looking at the senders of letters and the language they write in, we can gain a glimpse at what languages they expected the receiver to understand and which language they considered the correct one for their particular letter, be it due to subject matter and established terminology or their own level of language proficiency.
+
+In the Low Countries, Latin literature started to lose relevance during the early 17th century in the south, but in the north it remained relevant during the 18th century (Deneire). Latin was used by academics, clergy, diplomats, and used for poetry, drama and scholarly and scientific work (Deneire).
+
+The same individual can use different languages for different purposes or discourses, for instance Latin for learned discourse and the local vulgar language for others in the Early Modern period as an example of code-switching (Frijhoff et al 2017, p. 12).
+
+The Dutch golden age (ca 1580-1750) was also a high point for the Dutch language, both before and after being disregarded in favour of French among the middle and upper classes (Frijhoff 2017, 95, 98).
+In the 1580s, the States General of northern Netherlands switched from French to Dutch for communication, after the separation from the partly French-speaking southern Netherlands. During the 17th century there was an increased interest for Dutch as the bible was translated to it in 1637 and standardization and use as national language was increased (Frijhoff 2017, 97-98).
 
 ## The data
 
@@ -60,7 +69,7 @@ Sed aurem vellit <persName>Cato</persName>, qui ‘senilem iuventam signum esse 
 
 ## What I did with the data
 
-For this project, I am only looking at the metadata, that is the `<interp>` elements inside `<interpGrp>` elements in the XML files. I am also limiting the data only to those letters which have a known sender, approximate date, and listed language for the whole letter. Since this corpus is from several different institutions and presented in slightly different XML markup, I am limiting the data to those that are present in actual .xml files and using `<interpGrp>` tags (not `<meta>` tags) and have the language listed in an `<interp>` group and not as an attribute for `<div>` elements inside the transcriptions. I identify letters in the XML by searching for `<div>` elements of the subtype "artifact". Another subtype "replaced_artifact" may also refer to letters, possibly lost or not available or not transcribed, but those elements are excluded for now to make the parsing easier.
+For this project, I am only looking at the metadata, that is the `<interp>` elements inside `<interpGrp>` elements in the XML files. I am also limiting the data only to those letters which have a known sender, approximate date, and listed language for the whole letter. Since this corpus is from several different institutions and presented in slightly different XML markup, I am limiting the data to those that are present in actual .xml files (instead of .txt files containing concatenated .xml files) and using `<interpGrp>` tags (not `<meta>` tags) and have the language listed in an `<interp>` group and not as an attribute for `<div>` elements inside the transcriptions. I identify letters in the XML by searching for `<div>` elements of the subtype "artifact". Another subtype "replaced_artifact" may also refer to letters, possibly lost or not available or not transcribed, but those elements are excluded for now to make the parsing easier.
 
 Anthoni van Leeuwenhoek's corpus (leeu027) is discarded since it seems to be from a bilingual Dutch-English collection of his letters with no indication as to what the original language of each letter was. While Constantijn Huyghens' (huyg001) letters do follow the expected XML format, most of them are discarded due to not having language info on a letter level. Descartes' corpus (desc004) is also discarded due to the structured XML data not being present in the archive.
 
@@ -101,3 +110,10 @@ The scatterplots are littered with the labels for each writer. This is a bad com
 The analysis is pretty surface level and does not refer to previous research nor does it go into detail on how to classify "monolingual", "bilingual" or "trilingual" authors into interesting national/societal groups.
 
 The output could be saved in eg. a csv file instead of directly in stdout for re-use and more data analysis.
+
+## Bibliography
+
+De Bom, Erik. ‘Diplomacy and Court Culture’. Brill’s Encyclopaedia of the Neo-Latin World. Ed. Craig Kallendorf et al. Brill Reference Online. Web. 2 Feb. 2024.
+Deneire, Tom. ‘Neo-Latin Literature—The Low Countries’. Brill’s Encyclopaedia of the Neo-Latin World. Ed. Craig Kallendorf et al. Brill Reference Online. Web. 2 Feb. 2024.
+Frijhoff, Willem. "4. Multilingualism in the Dutch Golden Age. An Exploration" In Multilingualism, Nationhood, and Cultural Identity: Northern Europe, 16th-19th Centuries edited by Willem Frijhoff, Marie-Christine Kok Escalle and Karène Sanchez-Summerer, 95-168. Amsterdam: Amsterdam University Press, 2016. https://doi-org.libproxy.helsinki.fi/10.1515/9789048530007-005
+Frijhoff, Willem, Escalle, Marie-Christine Kok and Sanchez-Summerer, Karène. "Languages and Culture in History. A New Series" In Multilingualism, Nationhood, and Cultural Identity: Northern Europe, 16th-19th Centuries edited by Willem Frijhoff, Marie-Christine Kok Escalle and Karène Sanchez-Summerer, 7-14. Amsterdam: Amsterdam University Press, 2016. https://doi-org.libproxy.helsinki.fi/10.1515/9789048530007-001

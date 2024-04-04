@@ -8,10 +8,8 @@ import numpy as np
 import matplotlib as mpl
 import mpltern
 
-def parse_transcriptions(files):
-    xml_files = list()
-    for file in files:
-        xml_files.extend(glob.glob(file + "/**.xml", recursive=True))
+def parse_transcriptions(folder):
+    xml_files = list(glob.glob(folder + "/**.xml", recursive=True))
     print("Found %d XML files" % len(xml_files))
     root = ET.Element('root')
     xml_element_tree = ET.ElementTree(root)
@@ -63,7 +61,8 @@ def parse_metadata(root_elem):
     return metadata, min_date, max_date, authors_list, lang_set
 
 
-def plot_timeline(metadata, min_date, max_date):
+def plot_timeline(ego, metadata, min_date, max_date, ego_is_author):
+    mode = "sent" if ego_is_author else "received"
     x = np.arange(min_date, max_date+1) # arange is [start, stop)
     latin = np.zeros(len(x))
     french = np.zeros(len(x))
@@ -83,6 +82,7 @@ def plot_timeline(metadata, min_date, max_date):
                 elif letter['lang'] == 'de':
                     german[i] += 1
 
+    # First plot absolute amount of letters in each major language
     plt.figure()
     plt.plot(x, latin, label='Latin')
     plt.plot(x, french, label='French')
@@ -90,16 +90,41 @@ def plot_timeline(metadata, min_date, max_date):
     plt.plot(x, german, label='German')
     plt.xlabel('Year')
     plt.ylabel('Number of letters')
-    plt.title("Language used in letters over time")
+    # TODO how to ensure whole title is visible in all the plots?
+    plt.title("Language used in letters over time for correspondence %s by %s" % (mode, ego))
     plt.legend()
-    timeline_file_name = 'timeline.png'
+    timeline_file_name = "timeline_%s_%s.png" % (mode, re.sub(' ', '_', ego))
     plt.savefig(timeline_file_name)
     print("Figure saved to file %s" % timeline_file_name)
     plt.show()
-    #TODO figure out how to save these plots
+
+    # Then plot the relative amount of letters over time
+    # first we calculate the proportions, could probably do it more efficiently with some numpy methods
+    prop_latin = np.zeros(len(x))
+    prop_french = np.zeros(len(x))
+    prop_dutch = np.zeros(len(x))
+    prop_german = np.zeros(len(x))
+    for i in range(0, len(x)):
+        sum = latin[i] + french[i] + dutch[i] + german[i]
+        prop_latin[i] = latin[i]/sum
+        prop_french[i] = french[i]/sum
+        prop_dutch[i] = dutch[i]/sum
+        prop_german[i] = german[i]/sum
+    plt.figure()
+    plt.stackplot(x, prop_latin, prop_french, prop_dutch, prop_german, labels=('Latin', 'French', 'Dutch', 'German'))
+    plt.xlabel('Year')
+    plt.ylabel('Proportion of letters')
+    plt.title("Proportion of language used in letters over time %s by %s" % (mode, ego))
+    plt.legend(loc='lower left') # TODO figure out how to put legend outside of figure
+    stack_file_name = "stack_%s_%s.png" % (mode, re.sub(' ', '_', ego))
+    plt.savefig(stack_file_name)
+    print("Figure saved to file %s" % stack_file_name)
+    plt.show()
 
 # Here we want to find the proportions of letters in each language per sender (NB: not necessarily the author)
-def plot_authors(root_elem, authors_list):
+# TODO split into sent/received?
+def plot_authors(ego, root_elem, authors_list):
+    print("Language proportion for %s's correspondence" % ego)
     authors = np.array(authors_list)
     totals = np.zeros(len(authors))
     latin = np.zeros(len(authors))
@@ -164,10 +189,11 @@ def plot_authors(root_elem, authors_list):
     toplist = sorted(zip(authors, latin_proportion, french_proportion, dutch_proportion, total_letters), key=lambda author: author[4], reverse=True)
     filtered_toplist = list(filter(lambda auth: auth[-1] > 0, toplist))
     print()
-    print("Top 100 authors")
+    print("Top 100 authors for %s" % ego)
     # Reserve 40 chars for the names
     print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total letters (in these languages)" % "Name")
-    for i in range(0,100):
+    # Need to clamp max value for ego networks with <100 correspondents
+    for i in range(0,min(100, len(toplist))):
         print("%-40s:\t %f\t %f\t %f\t %d" % (toplist[i][0], toplist[i][1], toplist[i][2], toplist[i][3], toplist[i][4]))
 
 
@@ -177,7 +203,7 @@ def plot_authors(root_elem, authors_list):
     # Unzip again to make plotting easier
     multilingual_authors, multiling_latin_prop, multiling_french_prop, multiling_dutch_prop, multiling_totals = zip(*filtered_only_major_langs)
     print()
-    print("Found %d multilingual authors (major languages only)" % len(multilingual_authors))
+    print("Found %d multilingual authors (major languages only) for %s" % (len(multilingual_authors), ego))
     print("%-40s\t Latin\t\t French\t\t Dutch\t\t Total letters (in these languages)" % "Name")
     for i in range(0,len(multilingual_authors)):
         print("%-40s:\t %f\t %f\t %f\t %d" % (multilingual_authors[i], multiling_latin_prop[i], multiling_french_prop[i], multiling_dutch_prop[i], multiling_totals[i]))
@@ -197,12 +223,12 @@ def plot_authors(root_elem, authors_list):
     ax.set_xlabel('Proportion of Latin')
     ax.set_ylabel('Proportion of French')
     ax.set_zlabel('Proportion of Dutch')
-    plt.title('3d scatterplot of the proportions of Latin, French and Dutch letters')
+    plt.title('3d scatterplot of the proportions of Latin, French and Dutch letters for %s' % ego)
 
     # Rotate the plot to a better perspective for viewing the plane they are all in
     # Default is elev=30, azim=-60, roll=0
     ax.view_init(elev=60, azim=45, roll=0)
-    scatter_3d_file_name = '3d_scatter.png'
+    scatter_3d_file_name = "3d_scatter_%s.png" % re.sub(' ', '_', ego)
     plt.savefig(scatter_3d_file_name)
     print("Figure saved to file %s" % scatter_3d_file_name)
     plt.show()
@@ -210,7 +236,7 @@ def plot_authors(root_elem, authors_list):
     # Do a ternary plot
     fig_tern = plt.figure(figsize=(10,8), layout='constrained')
     ax_tern = fig_tern.add_subplot(projection="ternary")
-    ax_tern.set_title("Proportions of letters in Latin, French and Dutch per sender")
+    ax_tern.set_title("Proportions of letters in Latin, French and Dutch per sender for %s" % ego)
     ax_tern.set_tlabel("Latin")
     ax_tern.set_llabel("French")
     ax_tern.set_rlabel("Dutch")
@@ -219,7 +245,7 @@ def plot_authors(root_elem, authors_list):
     ax_tern.scatter(xs, ys, zs)
     for i, author in enumerate(multilingual_authors):
         ax_tern.text(xs[i], ys[i], zs[i], author)
-    ternary_file_name = 'ternary_plot.png'
+    ternary_file_name = "ternary_plot_%s.png" % re.sub(' ', '_', ego)
     plt.savefig(ternary_file_name)
     print("Figure saved to file %s" % ternary_file_name)
     plt.show()
@@ -227,8 +253,16 @@ def plot_authors(root_elem, authors_list):
 # Currently only looking at de Groot, Christiaan and Constantijn Huyghens, expand to the rest later when I have looked into their XML file layout
 # Leeuwenhoek is also being skipped for now because of a different way of marking language
 # Constantin Huyghens corpus also has the language in the expected place for only roughly 100 letters
-folders = ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/']
-letters = parse_transcriptions(folders)
-metadata, min_date, max_date, authors_list, lang_set = parse_metadata(letters)
-plot_timeline(metadata, min_date, max_date)
-plot_authors(metadata, authors_list)
+corpuses = [('groot.hugo.1583-1645', 'Hugo de Groot', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/'),
+    #('huygens.constantijn.1596-1687', 'Constantijn Huyghens', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/'),
+    ('huygens.christiaan.1629-1695', 'Christiaan Huyghens', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/')]
+#folders = ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/']
+for ego_id, ego, folder in corpuses:
+    letters = parse_transcriptions(folder)
+    metadata, min_date, max_date, authors_list, lang_set = parse_metadata(letters)
+    #Split into sent and received
+    sent = [letter for letter in metadata if ego_id in letter['author']]
+    received = [letter for letter in metadata if ego_id not in letter['author']]
+    plot_timeline(ego, sent, min_date, max_date, True)
+    plot_timeline(ego, received, min_date, max_date, False)
+    plot_authors(ego, metadata, authors_list)
