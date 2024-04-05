@@ -93,6 +93,8 @@ def plot_timeline(ego, metadata, min_date, max_date, mode):
     french = np.zeros(len(x))
     dutch = np.zeros(len(x))
     german = np.zeros(len(x))
+    english = np.zeros(len(x))
+    italian = np.zeros(len(x))
     # Very inefficient way of doing this but no point prematurely optimizing
     for i in range(0, len(x)):
         year = x[i]
@@ -106,6 +108,10 @@ def plot_timeline(ego, metadata, min_date, max_date, mode):
                     dutch[i] += 1
                 elif letter['lang'] == 'de':
                     german[i] += 1
+                elif letter['lang'] == 'en':
+                    english[i] += 1
+                elif letter['lang'] == 'it':
+                    italian[i] += 1
 
     # First plot absolute amount of letters in each major language
     plt.figure(figsize=(8,6))
@@ -113,6 +119,8 @@ def plot_timeline(ego, metadata, min_date, max_date, mode):
     plt.plot(x, french, label='French')
     plt.plot(x, dutch, label='Dutch')
     plt.plot(x, german, label='German')
+    plt.plot(x, english, label='English')
+    plt.plot(x, italian, label='Italian')
     plt.xlabel('Year')
     plt.ylabel('Number of letters')
     plt.title("Language used in letters over time for %s %s" % (mode, ego))
@@ -128,14 +136,18 @@ def plot_timeline(ego, metadata, min_date, max_date, mode):
     prop_french = np.zeros(len(x))
     prop_dutch = np.zeros(len(x))
     prop_german = np.zeros(len(x))
+    prop_english = np.zeros(len(x))
+    prop_italian = np.zeros(len(x))
     for i in range(0, len(x)):
-        sum = latin[i] + french[i] + dutch[i] + german[i]
+        sum = latin[i] + french[i] + dutch[i] + german[i] + english[i] + italian[i]
         prop_latin[i] = latin[i]/sum
         prop_french[i] = french[i]/sum
         prop_dutch[i] = dutch[i]/sum
         prop_german[i] = german[i]/sum
+        prop_english[i] = english[i]/sum
+        prop_italian[i] = italian[i]/sum
     plt.figure(figsize=(8,6))
-    plt.stackplot(x, prop_latin, prop_french, prop_dutch, prop_german, labels=('Latin', 'French', 'Dutch', 'German'))
+    plt.stackplot(x, prop_latin, prop_french, prop_dutch, prop_german, prop_english, prop_italian, labels=('Latin', 'French', 'Dutch', 'German', 'English', 'Italian'))
     plt.xlabel('Year')
     plt.ylabel('Proportion of letters')
     plt.title("Proportion of language used in letters over time for %s %s" % (mode, ego))
