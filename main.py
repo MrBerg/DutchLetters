@@ -8,23 +8,47 @@ import numpy as np
 import matplotlib as mpl
 import mpltern
 
-def parse_transcriptions(folder):
-    xml_files = list(glob.glob(folder + "/**.xml", recursive=True))
-    print("Found %d XML files" % len(xml_files))
+# This method reads the suitable files in the folders and collects the metadata for
+# the letters, returning an XML structure
+def parse_transcriptions(folders):
+    # Create a new xml tree for matching XML elements
     root = ET.Element('root')
-    xml_element_tree = ET.ElementTree(root)
-    for xml_file in xml_files:
-        data = ET.parse(xml_file).getroot()
-        # At least for Hugo de Groot,
-        # transcribed letters are <div> elements with the subtype 'artifact'
-        # whereas subtype 'replaced-artifact' seem to be unavailable (some other collection)? Or duplicates?
-        # TODO add useful replaced-artifact divs?
-        for result in data.iterfind("./text/body/div[@subtype='artifact']"):
-            root.append(result)
+    for folder in folders:
+        # Some corpuses have proper xml files, some have concatenated xml files into txt files
+        xml_files = list(glob.glob(folder + "/**.xml", recursive=True))
+        txt_files = list(glob.glob(folder + "/**.txt", recursive=True))
+        print("Found %d XML files and %d TXT files" % (len(xml_files), len(txt_files)))
+        xml_element_tree = ET.ElementTree(root)
+        for xml_file in xml_files:
+            data = ET.parse(xml_file).getroot()
+            # At least for Hugo de Groot,
+            # transcribed letters are <div> elements with the subtype 'artifact'
+            # whereas subtype 'replaced-artifact' seem to be unavailable (some other collection)? Or duplicates?
+            # TODO add useful replaced-artifact divs?
+            for result in data.iterfind("./text/body/div[@subtype='artifact']"):
+                root.append(result)
+        # txt files use lines like '### 0001.xml' and '### EOF' to separate the <TEI> roots for each letter
+        # also they are not always proper xml, so we drop the letter contents without even parsing them
+        # by just saving the renamed <teiHeader> subtrees under a new <div> elem to follow the xml structure above.
+        # It should be fine to have all the letters in a file share the same root.
+        for txt_file in txt_files:
+            txt_file = open(txt_file, 'r').readlines()
+            edited_file = []
+            for line in txt_file:
+                if line.startswith("<teiHeader") or line.startswith("</teiHeader>") or line.startswith("<meta"):
+                    # Do a basic find-replace to make later parsing easier
+                    line = re.sub('<teiHeader', '<interpGrp', line)
+                    line = re.sub('</teiHeader', '</interpGrp', line)
+                    line = re.sub('<meta', '<interp', line)
+                    edited_file.append(line)
+            if edited_file:
+                recombined_string = "<div>\n" + "".join(edited_file) + "</div>"
+                data = ET.fromstring(recombined_string)
+                root.append(data)
     return root
 
-# Just use the available metadata and not the transcription
-# Dates are listed as year, year-month, year-month-date or year-month/year-month or ?
+# This method goes through the metadata and drops letters which lack an author, date or listed language
+# Dates are listed in the metadata as year, year-month, year-month-date or year-month/year-month or ?
 # Just pick the first year available for multi-year datings
 def parse_metadata(root_elem):
     metadata = []
@@ -37,6 +61,9 @@ def parse_metadata(root_elem):
 
     for letter in root_elem.iterfind("./div/interpGrp"):
         author_node = letter.find("./interp[@type='sender']")
+        # If there is no sender node, it is probably not a letter
+        if author_node is None:
+            continue
         author = author_node.get('value')
         date = letter.find("./interp[@type='date']")
         year = year_pattern.match(date.get('value'))
@@ -60,9 +87,7 @@ def parse_metadata(root_elem):
     print("Languages used: " + str(lang_set))
     return metadata, min_date, max_date, authors_list, lang_set
 
-
-def plot_timeline(ego, metadata, min_date, max_date, ego_is_author):
-    mode = "sent" if ego_is_author else "received"
+def plot_timeline(ego, metadata, min_date, max_date, mode):
     x = np.arange(min_date, max_date+1) # arange is [start, stop)
     latin = np.zeros(len(x))
     french = np.zeros(len(x))
@@ -83,17 +108,16 @@ def plot_timeline(ego, metadata, min_date, max_date, ego_is_author):
                     german[i] += 1
 
     # First plot absolute amount of letters in each major language
-    plt.figure()
+    plt.figure(figsize=(8,6))
     plt.plot(x, latin, label='Latin')
     plt.plot(x, french, label='French')
     plt.plot(x, dutch, label='Dutch')
     plt.plot(x, german, label='German')
     plt.xlabel('Year')
     plt.ylabel('Number of letters')
-    # TODO how to ensure whole title is visible in all the plots?
-    plt.title("Language used in letters over time for correspondence %s by %s" % (mode, ego))
+    plt.title("Language used in letters over time for %s %s" % (mode, ego))
     plt.legend()
-    timeline_file_name = "timeline_%s_%s.png" % (mode, re.sub(' ', '_', ego))
+    timeline_file_name = "timeline_%s.png" % re.sub(' ', '_', mode + "_" + ego)
     plt.savefig(timeline_file_name)
     print("Figure saved to file %s" % timeline_file_name)
     plt.show()
@@ -110,13 +134,13 @@ def plot_timeline(ego, metadata, min_date, max_date, ego_is_author):
         prop_french[i] = french[i]/sum
         prop_dutch[i] = dutch[i]/sum
         prop_german[i] = german[i]/sum
-    plt.figure()
+    plt.figure(figsize=(8,6))
     plt.stackplot(x, prop_latin, prop_french, prop_dutch, prop_german, labels=('Latin', 'French', 'Dutch', 'German'))
     plt.xlabel('Year')
     plt.ylabel('Proportion of letters')
-    plt.title("Proportion of language used in letters over time %s by %s" % (mode, ego))
+    plt.title("Proportion of language used in letters over time for %s %s" % (mode, ego))
     plt.legend(loc='lower left') # TODO figure out how to put legend outside of figure
-    stack_file_name = "stack_%s_%s.png" % (mode, re.sub(' ', '_', ego))
+    stack_file_name = "stack_%s.png" % re.sub(' ', '_', mode + "_" + ego)
     plt.savefig(stack_file_name)
     print("Figure saved to file %s" % stack_file_name)
     plt.show()
@@ -196,7 +220,6 @@ def plot_authors(ego, root_elem, authors_list):
     for i in range(0,min(100, len(toplist))):
         print("%-40s:\t %f\t %f\t %f\t %d" % (toplist[i][0], toplist[i][1], toplist[i][2], toplist[i][3], toplist[i][4]))
 
-
     # For now, look only at senders using more than one language so as to not overwhelm in the plot
     # TODO: Also limit to senders with more than x letters
     filtered_only_major_langs = list(filter(lambda auth: auth[1]!= 1.0 and auth[2] != 1.0 and auth[3] != 1.0, filtered_toplist))
@@ -209,7 +232,8 @@ def plot_authors(ego, root_elem, authors_list):
         print("%-40s:\t %f\t %f\t %f\t %d" % (multilingual_authors[i], multiling_latin_prop[i], multiling_french_prop[i], multiling_dutch_prop[i], multiling_totals[i]))
 
     # Now the plotting begins
-    # TODO: instead of doing a 3d plot, do a ternary scatterplot
+    # This 3d plot and the ternary scatterplot show the same data but one might be more readable
+    # TODO: add the monolingual authors, make either one a heatmap?
     fig = plt.figure(figsize=(10,8))
     ax = fig.add_subplot(projection='3d')
 
@@ -250,19 +274,22 @@ def plot_authors(ego, root_elem, authors_list):
     print("Figure saved to file %s" % ternary_file_name)
     plt.show()
 
-# Currently only looking at de Groot, Christiaan and Constantijn Huyghens, expand to the rest later when I have looked into their XML file layout
-# Leeuwenhoek is also being skipped for now because of a different way of marking language
-# Constantin Huyghens corpus also has the language in the expected place for only roughly 100 letters
-corpuses = [('groot.hugo.1583-1645', 'Hugo de Groot', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/'),
-    #('huygens.constantijn.1596-1687', 'Constantijn Huyghens', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/'),
-    ('huygens.christiaan.1629-1695', 'Christiaan Huyghens', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/')]
-#folders = ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/']
+# Currently only looking at de Groot and Christiaan Huyghens in detail, the rest get bunched together.
+# Leeuwenhoek is skipped for now because of a different way of marking language, Descartes doesn't have any xml files at all
+# Constantin Huyghens corpus also has the language in the expected place for only roughly 100 letters, so most of them are disregarded.
+others_folders = ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/barl001/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/beec002/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/nier005/', 'ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/swam001/']
+corpuses = [('groot.hugo.1583-1645', 'Hugo de Groot', ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/groo001/']),
+    ('huygens.christiaan.1629-1695', 'Christiaan Huyghens', ['ckccRestored/1677705613221-Project_Circulation_of_Kn/original/data/corpus/data/huyg003/']),
+    ('foo', 'Others', others_folders)]
 for ego_id, ego, folder in corpuses:
     letters = parse_transcriptions(folder)
     metadata, min_date, max_date, authors_list, lang_set = parse_metadata(letters)
-    #Split into sent and received
-    sent = [letter for letter in metadata if ego_id in letter['author']]
-    received = [letter for letter in metadata if ego_id not in letter['author']]
-    plot_timeline(ego, sent, min_date, max_date, True)
-    plot_timeline(ego, received, min_date, max_date, False)
+    if 'foo' in ego_id:
+        plot_timeline(ego, metadata, min_date, max_date, "correspondence of")
+    else:
+        # Split into sent and received for our main egos
+        sent = [letter for letter in metadata if ego_id in letter['author']]
+        received = [letter for letter in metadata if ego_id not in letter['author']]
+        plot_timeline(ego, sent, min_date, max_date, "letters sent by")
+        plot_timeline(ego, received, min_date, max_date, "letters received by")
     plot_authors(ego, metadata, authors_list)
